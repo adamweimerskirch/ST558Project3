@@ -1,26 +1,12 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(shiny)
+library(tidyverse)
 
-# Define server logic required to draw a histogram
+ascentData <- as.tbl(read_csv("../ascentDataSample.csv"))
+routeData <- as.tbl(read_csv("../routeData.csv"))
+
+# Define server logic
 shinyServer(function(input, output) {
-
-    output$distPlot <- renderPlot({
-
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
-
-    })
-
+  output$table <- renderTable({
+    routeData %>% select(name, climb_type, difficulty, crag, sector, country, rating)
+  })
 })
