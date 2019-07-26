@@ -3,13 +3,13 @@ library(shinydashboard)
 
 # infoTabTest <- source("infoTabTest.R", local = TRUE)
 
-#define UI
+# define UI
 shinyUI(fluidPage(
     
     dashboardPage(
         dashboardHeader(title = "Climbing Data"),
         
-        #sidebar
+        # sidebar
         dashboardSidebar(
             sidebarMenu(
                 menuItem("Information", tabName = "info", icon = icon("info")),
@@ -20,7 +20,7 @@ shinyUI(fluidPage(
             )
         ),
         
-        #body
+        # body
         dashboardBody(
             tabItems(
                 ########################################################
@@ -34,10 +34,10 @@ shinyUI(fluidPage(
                 # source("../infoTabTest.R", local = TRUE),
                 
                 ########################################################
-                #data tab
+                # data tab
                 tabItem(tabName = "data",
                         fluidRow(
-                            box("data table with relevant subsetting")
+                            box("data table with relevant subsetting", "create data filters")
                             ),
                         fluidRow(
                             box(tableOutput("table"))
@@ -45,15 +45,23 @@ shinyUI(fluidPage(
                         ),
                 
                 ########################################################
-                #data exploration tab
+                # data exploration tab
                 tabItem(tabName = "eda",
                         fluidRow(
-                            box("data exploration, user creates common numeric and graphical summaries")
-                            )
+                            box("data exploration, user creates common numeric and graphical summaries", "create histogram for numeric, pareto for categorical")
+                            ),
+
+                        fluidRow(
+                            selectizeInput("EDAVar", "Choose variable for EDA", choices = names(ascentDataSample))
                         ),
+
+                        fluidRow(
+                            box(plotOutput("EDAPlot"))
+                        )
+                ),
                 
                 ########################################################
-                #cluster analysis tab
+                # cluster analysis tab
                 tabItem(tabName = "cluster",
                         fluidRow(
                             box("cluster analysis")
@@ -61,7 +69,7 @@ shinyUI(fluidPage(
                         ),
                 
                 ########################################################
-                #modeling tab
+                # modeling tab
                 tabItem(tabName = "model",
                         fluidRow(
                             box("data models, at least two supervised learning models, user functionality to change user settings, and prediction")
