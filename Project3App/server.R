@@ -58,24 +58,31 @@ shinyServer(function(input, output, session) {
   
   # filter route data
   routeDataFilter <- reactive({
-    routeData %>% filter(country == input$tableCountry)#, sector == input$tableSector, crag == input$tableCrag)
+    routeData %>% filter(country == input$tableCountry, sector == input$tableSector, crag == input$tableCrag)
+  })
+  cragChoices <- reactive({
+    routeData %>% filter(country == input$tableCountry) %>% select(crag)
+  })
+  sectorChoices <- reactive({
+    routeData %>% filter(crag == input$tableCrag) %>% select(sector)
   })
   
-  sectorChoices <- reactive({
-    ascentDataSample %>% filter(stri_trans_toupper(country) == "USA") %>% select(sector)
-  })
   
   # update route select boxes
   observe({
-    updateVarSelectizeInput(session, "tableSector", data = sectorChoices)
-    #updateVarSelectizeInput(session, "tableCrag", data = routeDataFilter$crag, selected = character(0))
+    updateSelectizeInput(session, "tableCrag", choices = cragChoices())
   })
+  observe({
+    updateSelectizeInput(session, "tableSector", choices = sectorChoices())
+  })
+  
   
   # render route data table
   output$table <- renderTable({
     routeDataFilter() %>% select(name, climb_type, difficulty, crag, sector, country, rating)
   })
 
+  
   # render EDA plot
   observe({
     if(typeof(input$EDAVar) == "character"){

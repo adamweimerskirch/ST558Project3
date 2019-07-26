@@ -46,16 +46,17 @@ shinyUI(fluidPage(
                                            choices = stri_trans_toupper(ascentDataSample$country),
                                            multiple = FALSE,
                                            selected = ),
-                            
-                            selectizeInput("tableSector",
-                                           "Select route sector",
-                                           choices = stri_trans_toupper(ascentDataSample$sector),
-                                           multiple = FALSE),
-                            
+
                             selectizeInput("tableCrag",
                                            "Select route crag",
                                            choices = stri_trans_toupper(ascentDataSample$crag),
+                                           multiple = FALSE),
+
+                            selectizeInput("tableSector",
+                                           "Select route sector",
+                                           choices = stri_trans_toupper(ascentDataSample$sector),
                                            multiple = FALSE)
+
                         ),
                         
                         fluidRow(
