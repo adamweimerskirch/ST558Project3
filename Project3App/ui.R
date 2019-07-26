@@ -13,7 +13,7 @@ shinyUI(fluidPage(
         dashboardSidebar(
             sidebarMenu(
                 menuItem("Information", tabName = "info", icon = icon("info")),
-                menuItem("Route List", tabName = "data", icon = icon("table")),
+                menuItem("Route List", tabName = "table", icon = icon("table")),
                 menuItem("Data Exploration", tabName = "eda", icon = icon("calculator")),
                 menuItem("Cluster Analysis", tabName = "cluster", icon = icon("chart-bar")),
                 menuItem("Modeling", tabName = "model", icon = icon("chart-line"))
@@ -35,10 +35,29 @@ shinyUI(fluidPage(
                 
                 ########################################################
                 # data tab
-                tabItem(tabName = "data",
+                tabItem(tabName = "table",
                         fluidRow(
-                            box("data table with relevant subsetting", "create data filters")
-                            ),
+                            box("data table with relevant subsetting", "allow multiselect")
+                        ),
+                        
+                        fluidRow(
+                            selectizeInput("tableCountry",
+                                           "Select route country",
+                                           choices = stri_trans_toupper(ascentDataSample$country),
+                                           multiple = FALSE,
+                                           selected = ),
+                            
+                            selectizeInput("tableSector",
+                                           "Select route sector",
+                                           choices = stri_trans_toupper(ascentDataSample$sector),
+                                           multiple = TRUE),
+                            
+                            selectizeInput("tableCrag",
+                                           "Select route crag",
+                                           choices = stri_trans_toupper(ascentDataSample$crag),
+                                           multiple = TRUE)
+                        ),
+                        
                         fluidRow(
                             box(tableOutput("table"))
                             )
@@ -52,7 +71,9 @@ shinyUI(fluidPage(
                             ),
 
                         fluidRow(
-                            selectizeInput("EDAVar", "Choose variable for EDA", choices = names(ascentDataSample))
+                            selectizeInput("EDAVar",
+                                           "Choose variable for EDA",
+                                           choices = names(ascentDataSample))
                         ),
 
                         fluidRow(
