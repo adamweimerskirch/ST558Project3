@@ -41,21 +41,25 @@ shinyUI(fluidPage(
                         ),
                         
                         fluidRow(
-                            selectizeInput("tableCountry",
-                                           "Select route country",
-                                           choices = stri_trans_toupper(ascentDataSample$country),
-                                           multiple = FALSE,
-                                           selected = ),
-
-                            selectizeInput("tableCrag",
-                                           "Select route crag",
-                                           choices = stri_trans_toupper(ascentDataSample$crag),
-                                           multiple = FALSE),
-
-                            selectizeInput("tableSector",
-                                           "Select route sector",
-                                           choices = stri_trans_toupper(ascentDataSample$sector),
-                                           multiple = FALSE)
+                            # selectizeInput("tableCountry",
+                            #                "Select route country",
+                            #                choices = stri_trans_toupper(routeData$country),
+                            #                multiple = FALSE,
+                            #                selected = "USA"),
+                            # 
+                            # selectizeInput("tableCrag",
+                            #                "Select route crag",
+                            #                choices = stri_trans_toupper(routeData$crag),
+                            #                multiple = FALSE,
+                            #                selected = "Red River Gorge"),
+                            # 
+                            # selectizeInput("tableSector",
+                            #                "Select route sector",
+                            #                choices = stri_trans_toupper(routeData$sector),
+                            #                multiple = FALSE,
+                            #                "Solar Collector")
+                            
+                            uiOutput("routeCountry")
 
                         ),
                         
@@ -74,7 +78,7 @@ shinyUI(fluidPage(
                         fluidRow(
                             selectizeInput("EDAVar",
                                            "Choose variable for EDA",
-                                           choices = names(ascentDataSample))
+                                           choices = names(ascentData))
                         ),
 
                         fluidRow(

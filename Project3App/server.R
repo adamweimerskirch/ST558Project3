@@ -1,10 +1,10 @@
 library(shiny)
 library(tidyverse)
 
-ascentData <- as.tbl(read_csv("../ascentDataSample.csv"))
-routeData <- as.tbl(read_csv("../routeData.csv"))
+ascentData <- read_csv("../ascentDataSample.csv")
+routeData <- read_csv("../routeData.csv")
 
-g <- ggplot(ascentDataSample)
+g <- ggplot(ascentData)
 
 # function to generate pareto chart courtesy Davide Passaretti on RPubs
 # https://rpubs.com/dav1d00/ggpareto
@@ -58,22 +58,29 @@ shinyServer(function(input, output, session) {
   
   # filter route data
   routeDataFilter <- reactive({
-    routeData %>% filter(country == input$tableCountry, sector == input$tableSector, crag == input$tableCrag)
+    routeData %>% filter(country == input$routeCountry)#, sector == input$tableSector, crag == input$tableCrag)
   })
-  cragChoices <- reactive({
-    routeData %>% filter(country == input$tableCountry) %>% select(crag)
-  })
-  sectorChoices <- reactive({
-    routeData %>% filter(crag == input$tableCrag) %>% select(sector)
-  })
+  # cragChoices <- reactive({
+  #   routeData %>% filter(country == input$routeCountry) %>% select(crag)
+  # })
+  # sectorChoices <- reactive({
+  #   routeData %>% filter(crag == input$routeCrag) %>% select(sector)
+  # })
+
+
+  # # update route select boxes
+  # observe({
+  #   updateSelectizeInput(session, "routeCrag", choices = cragChoices())
+  # })
+  # observe({
+  #   updateSelectizeInput(session, "routeSector", choices = sectorChoices())
+  # })
   
-  
-  # update route select boxes
-  observe({
-    updateSelectizeInput(session, "tableCrag", choices = cragChoices())
-  })
-  observe({
-    updateSelectizeInput(session, "tableSector", choices = sectorChoices())
+  # render route select boxes
+  output$routeCountry <- renderUI({
+    selectInput("routeCountry", label = h4("Choose country"),
+                choices = routeData$country, selected = 1
+    )
   })
   
   
@@ -87,12 +94,86 @@ shinyServer(function(input, output, session) {
   observe({
     if(typeof(input$EDAVar) == "character"){
       output$EDAPlot <- renderPlot({
-        g + geom_histogram(aes(x = ascentDataSample$grade_id))
+        g + geom_histogram(aes(x = ascentData$grade_id))
       })
     } else {
       output$EDAPlot <- renderPlot({
-        ggpareto(ascentDataSample$usa_routes)
+        ggpareto(ascentData$usa_routes)
       })
     }
   })
 })
+
+# library(shiny)
+# library(dplyr)
+# 
+# location = c("Hobbiton", "Hobbiton", "Rivendell", "Rivendell", "Minas Tirith", "Minas Tirith") 
+# last = c("A", "B", "C", "D", "E", "F") 
+# first = c("G", "H", "I", "J", "K", "L") 
+# locations = data.frame(location, last, first)
+# 
+# 
+# # Define UI for application that draws a histogram
+# ui <- fluidPage(
+#   
+#   # Application title
+#   titlePanel("Select Dates of interest and location"),
+#   
+#   fluidRow(
+#     column(3, wellPanel(
+#     )
+#     ),
+#     column(3, wellPanel(
+#     )
+#     ),
+#     column(
+#       width = 6
+#     )
+#   ),
+#   
+#   fluidRow(
+#     tabsetPanel(
+#       type = "tabs",
+#       # summary tab
+#       tabPanel(
+#         "  Select Dates and Location",
+#         uiOutput("loc"),
+#         uiOutput("dt"),
+#         shiny::dataTableOutput("merged")
+#       )
+#     )
+#   )
+# )
+# 
+# 
+# # Define server logic required to draw a histogram
+# server <- function(input, output, session) {
+#   
+#   output$loc<-renderUI({
+#     selectInput("loc", label = h4("Choose location"),
+#                 choices = locations$location ,selected = 1
+#     )
+#   })
+#   
+#   rt<-reactive({
+#     #dataframe creation
+#     locations %>%
+#       filter(location == input$loc)
+#   })
+#   
+#   output$dt<-renderUI({
+#     selectInput("dt", label = h4("Choose Dates"), 
+#                 choices = as.vector(rbind(as.character(rt()$first),as.character(rt()$last))),
+#                 selected = 1,
+#                 multiple = T)
+#   })
+#   
+#   output$merged <- shiny::renderDataTable({
+#     locations %>%
+#       filter(location == input$loc,
+#              first %in% input$dt | last %in% input$dt)
+#   })
+# }
+# 
+# # Run the application 
+# shinyApp(ui = ui, server = server)
