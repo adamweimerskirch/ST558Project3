@@ -19,23 +19,26 @@ ascentData <- dbGetQuery(
   LEFT JOIN user u ON a.user_id = u.id"
 )
 
+# convert appropriate variables to title case
 ascentData$name <- stri_trans_totitle(ascentData$name)
 ascentData$crag <- stri_trans_totitle(ascentData$crag)
 ascentData$sector <- stri_trans_totitle(ascentData$sector)
-ascentData$country <- stri_trans_totitle(ascentData$country)
+ascentData$country <- stri_trans_toupper(ascentData$country)
 ascentData$user_city <- stri_trans_totitle(ascentData$user_city)
 ascentData$user_country <- stri_trans_totitle(ascentData$user_country)
 
-#create route data frame
+# filter to random set of ascents
+miniSample <- sample(1:nrow(ascentData), 100)
+ascentDataSample <- ascentData[miniSample, ]
+
+# create route data frame
 routeData <- ascentDataSample %>% select(name, climb_type, crag, sector, country, rating, usa_routes, usa_boulders) %>% transform(difficulty = ifelse(climb_type == 1, usa_boulders, usa_routes))
 routeData$climb_type <- routeData$climb_type %>% recode(`0` = "Route", `1` = "Boulder")
+routeData$country[routeData$country == ""] <- "Not Specified"
+routeData$crag[routeData$crag == ""] <- "Not Specified"
+routeData$sector[routeData$sector == ""] <- "Not Specified"
 
-#write data to csv
+# write data to csv
 write_csv(ascentData, "ascentData.csv")
 write_csv(routeData, "routeData.csv")
-
-#filter to random set of ascents
-miniSample <- sample(1:nrow(ascentData), 100)
-
-ascentDataSample <- ascentData[miniSample, ]
 write_csv(ascentDataSample, "ascentDataSample.csv")
