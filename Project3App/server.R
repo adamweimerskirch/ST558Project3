@@ -57,37 +57,27 @@ ggpareto <- function(x) {
 shinyServer(function(input, output, session) {
   
   # filter route data
-  routeDataFilter <- reactive({
-    routeData %>% filter(country == input$routeCountry)#, sector == input$tableSector, crag == input$tableCrag)
-  })
-  # cragChoices <- reactive({
-  #   routeData %>% filter(country == input$routeCountry) %>% select(crag)
-  # })
-  # sectorChoices <- reactive({
-  #   routeData %>% filter(crag == input$routeCrag) %>% select(sector)
-  # })
-
-
-  # # update route select boxes
-  # observe({
-  #   updateSelectizeInput(session, "routeCrag", choices = cragChoices())
-  # })
-  # observe({
-  #   updateSelectizeInput(session, "routeSector", choices = sectorChoices())
+  # routeDataFilter <- reactive({
+  #   routeData %>% filter(country == input$routeCountry)#, sector == input$tableSector, crag == input$tableCrag)
   # })
   
-  # render route select boxes
-  output$routeCountry <- renderUI({
-    selectInput("routeCountry", label = h4("Choose country"),
-                choices = routeData$country, selected = 1
-    )
-  })
+  # # render route select country box
+  # output$routeCountry <- renderUI({
+  #   selectizeInput("routeCountry", label = h4("Choose country"),
+  #               choices = routeData$country, selected = 1)
+  # })
   
   
   # render route data table
-  output$table <- renderTable({
-    routeDataFilter() %>% select(name, climb_type, difficulty, crag, sector, country, rating)
+  output$routeTable <- renderDataTable({
+    routeData %>% select(name, climb_type, difficulty, crag, sector, country, rating)
   })
+  
+  # # render route select crag box
+  # output$routeCrag <- renderUI({
+  #   selectizeInput("routeCrag", label = h4("Choose crag"),
+  #                  choices = routeTable()$crag, selected = 1)
+  # })
 
   
   # render EDA plot

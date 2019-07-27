@@ -41,30 +41,12 @@ shinyUI(fluidPage(
                         ),
                         
                         fluidRow(
-                            # selectizeInput("tableCountry",
-                            #                "Select route country",
-                            #                choices = stri_trans_toupper(routeData$country),
-                            #                multiple = FALSE,
-                            #                selected = "USA"),
-                            # 
-                            # selectizeInput("tableCrag",
-                            #                "Select route crag",
-                            #                choices = stri_trans_toupper(routeData$crag),
-                            #                multiple = FALSE,
-                            #                selected = "Red River Gorge"),
-                            # 
-                            # selectizeInput("tableSector",
-                            #                "Select route sector",
-                            #                choices = stri_trans_toupper(routeData$sector),
-                            #                multiple = FALSE,
-                            #                "Solar Collector")
-                            
-                            uiOutput("routeCountry")
-
+                            # uiOutput("routeCountry"),
+                            # uiOutput("routeCrag")
                         ),
                         
                         fluidRow(
-                            box(tableOutput("table"))
+                            box(dataTableOutput("routeTable"))
                             )
                         ),
                 
