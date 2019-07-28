@@ -53,33 +53,75 @@ ggpareto <- function(x) {
 }
 
 
+########################################################
+
+#create dataset of peak climbing grades for each user
+#improvement: find peak bouldering and route grades separately
+peakGrade <- ascentData %>%
+  group_by(user_id) %>%
+  summarize("height" = max(height),
+            "weight" = max(weight),
+            "sex" = max(sex),
+            "exp" = max(year) - min(started),
+            "nClimbs" = n(),
+            "maxGrade" = max(grade_id),
+            "maxScore" = max(total_score)) %>%
+  filter(height > 100, weight > 40, exp > 0, exp < 100, maxGrade > 0, maxScore > 0)
+
+#split into train and test sets  
+train <- sample(1:nrow(peakGrade), nrow(peakGrade)*0.8)
+test <- setdiff(1:nrow(peakGrade), train)
+peakGradeTrain <- peakGrade[train, ]
+peakGradeTest <- peakGrade[test, ]
+
+##train models w/ default settings
+#set model training parameters
+trCtrl <- trainControl(method = "repeatedcv", number = 3, repeats = 1)
+
+#capture the time it took to fit the model
+treeBench <- benchmark(
+  #fit regression tree model
+  treeFitDefault <- train(maxGrade ~ height + weight + sex + exp,
+                   data = peakGradeTrain,
+                   method = "rpart",
+                   trControl = trCtrl,
+                   preProcess = c("center", "scale"),
+                   tuneLength = 5)
+  , replications = 1)
+
+# treeBench$elapsed
+# treeFit
+# plot(treeFit) 
+
+#capture the time it took to fit the model
+rfBench <- benchmark(
+  #fit model with Random Forest method
+  rfFitDefault <- caret::train(maxGrade ~ height + weight + sex + exp,
+                        data = peakGradeTrain,
+                        method = "rf",
+                        trControl = trCtrl,
+                        preProcess = c("center", "scale"))
+  , replications = 1)
+
+# rfBench$elapsed
+# rfFit
+# plot(rfFit)
+
+
+########################################################
+
 # define server logic
 shinyServer(function(input, output, session) {
   
-  # filter route data
-  # routeDataFilter <- reactive({
-  #   routeData %>% filter(country == input$routeCountry)#, sector == input$tableSector, crag == input$tableCrag)
-  # })
-  
-  # # render route select country box
-  # output$routeCountry <- renderUI({
-  #   selectizeInput("routeCountry", label = h4("Choose country"),
-  #               choices = routeData$country, selected = 1)
-  # })
-  
-  
+  ########################################################
+  # Route List Tab
   # render route data table
   output$routeTable <- renderDataTable({
     routeData %>% select(name, climb_type, difficulty, crag, sector, country, rating)
   })
-  
-  # # render route select crag box
-  # output$routeCrag <- renderUI({
-  #   selectizeInput("routeCrag", label = h4("Choose crag"),
-  #                  choices = routeTable()$crag, selected = 1)
-  # })
 
-  
+  ########################################################
+  # EDA Tab
   # render EDA plot
   observe({
     if(typeof(input$EDAVar) == "character"){
@@ -92,78 +134,86 @@ shinyServer(function(input, output, session) {
       })
     }
   })
+  
+  ########################################################
+  # Region Summary Tab
+  # render route select country box
+  output$routeCountry <- renderUI({
+    selectizeInput("routeCountry", label = h4("Choose country"),
+                   choices = ascentData$country, selected = 1)
+  })
+  
+  # # render route select crag box
+  # cragChoices <- reactive({
+  #   ascentData %>% filter(country == input$routeCountry) %>% select(crag)
+  # })
+  # output$routeCrag <- renderUI({
+  #   selectizeInput("routeCrag", label = h4("Choose crag"),
+  #                  choices = cragChoices(), selected = 1)
+  # })
+  
+  # # render route select sector box
+  # sectorChoices <- reactive({
+  #   ascentData %>% filter(country == input$routeCountry, crag == input$routeCrag) %>% select(sector)
+  # })
+  # output$routeSector <- renderUI({
+  #   selectizeInput("routeSector", label = h4("Choose sector"),
+  #                  choices = sectorChoices(), selected = 1)
+  # })
+  
+  # filter data frame to selected region
+  regionData <- reactive({
+    ascentData %>% filter(country == input$routeCountry,
+                          crag == input$routeCrag,
+                          sector == input$routeSector)
+  })
+  
+  # render region summary
+  ########################################################
+  ### Modeling Tab
+  ### predicting peak climbing grade for each user w/ regression tree and random forest
+
+  ##allow user to select their own model parameters
+  #
+  
+  ##allow user to use model to predict peak grade of a new climber
+  #can I convert back to USA grade?
+  
+  #improvement: dynamically update allowable height and weight ranges by sex to avoid regions with little data for fitting the model
+  # output$predictHeight <- renderUI({
+  #   numericInput("predictHeight", label = "Height",
+  #                value = round(median(peakGrade$height),0),
+  #                min = 150,
+  #                max = 200,
+  #                step = 5)
+  # })
+  # 
+  # output$predictWeight <- renderUI({
+  #   numericInput("predictWeight", label = "Weight",
+  #                value = round(median(peakGrade$height),0),
+  #                min = 40,
+  #                max = 100,
+  #                step = 5)
+  # })
+  
+  predData <- reactive({
+    input$makePrediction
+
+    #update prediction inputs
+    isolate(
+      predData <- cbind(height = input$predictHeight,
+                        weight = input$predictWeight,
+                        sex = input$predictSex,
+                        exp = input$predictExp)
+    )
+  })
+
+  output$treePredict <- renderText({
+    treePredict <- predict(treeFitDefault, predData())
+  })
+  output$rfPredict <- renderText({
+    rfPredict <- predict(rfFitDefault, predData())
+  })
+  ########################################################
 })
 
-# library(shiny)
-# library(dplyr)
-# 
-# location = c("Hobbiton", "Hobbiton", "Rivendell", "Rivendell", "Minas Tirith", "Minas Tirith") 
-# last = c("A", "B", "C", "D", "E", "F") 
-# first = c("G", "H", "I", "J", "K", "L") 
-# locations = data.frame(location, last, first)
-# 
-# 
-# # Define UI for application that draws a histogram
-# ui <- fluidPage(
-#   
-#   # Application title
-#   titlePanel("Select Dates of interest and location"),
-#   
-#   fluidRow(
-#     column(3, wellPanel(
-#     )
-#     ),
-#     column(3, wellPanel(
-#     )
-#     ),
-#     column(
-#       width = 6
-#     )
-#   ),
-#   
-#   fluidRow(
-#     tabsetPanel(
-#       type = "tabs",
-#       # summary tab
-#       tabPanel(
-#         "  Select Dates and Location",
-#         uiOutput("loc"),
-#         uiOutput("dt"),
-#         shiny::dataTableOutput("merged")
-#       )
-#     )
-#   )
-# )
-# 
-# 
-# # Define server logic required to draw a histogram
-# server <- function(input, output, session) {
-#   
-#   output$loc<-renderUI({
-#     selectInput("loc", label = h4("Choose location"),
-#                 choices = locations$location ,selected = 1
-#     )
-#   })
-#   
-#   rt<-reactive({
-#     #dataframe creation
-#     locations %>%
-#       filter(location == input$loc)
-#   })
-#   
-#   output$dt<-renderUI({
-#     selectInput("dt", label = h4("Choose Dates"), 
-#                 choices = as.vector(rbind(as.character(rt()$first),as.character(rt()$last))),
-#                 selected = 1,
-#                 multiple = T)
-#   })
-#   
-#   output$merged <- shiny::renderDataTable({
-#     locations %>%
-#       filter(location == input$loc,
-#              first %in% input$dt | last %in% input$dt)
-#   })
-# }
-# 
-# # Run the application 
-# shinyApp(ui = ui, server = server)
