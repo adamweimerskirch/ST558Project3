@@ -67,27 +67,28 @@ shinyUI(fluidPage(
                 ########################################################
                 ### Crag Summary Tab
                 tabItem(tabName = "crag",
+                        #row for page description
                         fluidRow(
-                            box("crag summary statistics by region")
+                            box(h4("Use this tab to find other crags similar to your favorites!  This tab uses k-means clustering to group similar crags by route mix (bouldering vs. roped routes), difficulty, and rating."))
                         ),
-
+                        #row for user input and cluster summary
                         fluidRow(
-                            box(
-                                selectizeInput("cragCountry", "Select Country",
-                                               choices = cragSummary$cragCountry)
-                                # uiOutput("routeCountry"),
-                                # uiOutput("routeCrag"),
-                                # uiOutput("routeSector")
-                            ),
                             box(
                                 sliderInput("nClust", "Number of Clusters",
                                             min = 1, max = 10, value = 5, step = 1),
                                 actionButton("calcClust", "Go!")
-                            )
-                        ),
-                        fluidRow(
-                            box(),
+                            ),
                             box(tableOutput("clustTable"))
+                        ),
+                        #row for cluster plot
+                        fluidRow(
+                            box(
+                                selectizeInput("cragCountry", "Filter Plot by Country",
+                                               choices = stri_sort(cragSummary$cragCountry),
+                                               selected = "USA"),
+                                uiOutput("clustFilter"),
+                                plotOutput("clustPlot")
+                            )
                         )
                 ),
                 

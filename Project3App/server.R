@@ -167,41 +167,6 @@ shinyServer(function(input, output, session) {
   ########################################################
   ### Crag Summary Tab
   
-  #possible improvement: allow drillable filtering through country
-  # # render route select country box
-  # output$routeCountry <- renderUI({
-  #   selectizeInput("routeCountry", label = h4("Choose country"),
-  #                  choices = ascentData$country, selected = 1)
-  # })
-  # 
-  # # render route select crag box
-  # cragChoices <- reactive({
-  #   ascentData %>% filter(country == input$routeCountry) %>% select(crag)
-  # })
-  # output$routeCrag <- renderUI({
-  #   selectizeInput("routeCrag", label = h4("Choose crag"),
-  #                  choices = cragChoices(), selected = 1)
-  # })
-  # 
-  # # render route select sector box
-  # sectorChoices <- reactive({
-  #   ascentData %>% filter(country == input$routeCountry, crag == input$routeCrag) %>% select(sector)
-  # })
-  # output$routeSector <- renderUI({
-  #   selectizeInput("routeSector", label = h4("Choose sector"),
-  #                  choices = sectorChoices(), selected = 1)
-  # })
-  
-  
-  # clusters <- kmeans(scale(cragSummary[-1:-3]), centers = 5, iter.max = 5, algorithm = "MacQueen")
-  # cragSummaryClust <- cragSummary %>% mutate("cluster" = as.factor(clusters$cluster))
-  # clustSummary <- cragSummaryClust %>% group_by(cluster) %>%
-  #   summarize(clustAscents = round(mean(ascentCount),0),
-  #             clustMix= round(mean(routeMix),2),
-  #             clustRating = round(mean(avgRating),2),
-  #             clustGrade = round(mean(medGrade),1),
-  #             clustCount = n())
-  
   #group crags into user-specified number of clusters
   cragSummaryClust <- reactive({
     input$calcClust
@@ -214,21 +179,6 @@ shinyServer(function(input, output, session) {
     })
   })
   
-  # #summarize clusters
-  # clustSummary <- reactive({
-  #   clustSummary <- cragSummaryClust() %>% group_by(cluster) %>%
-  #     summarize(clustAscents = round(mean(ascentCount),0),
-  #               clustMix= round(mean(routeMix),2),
-  #               clustRating = round(mean(avgRating),2),
-  #               clustGrade = round(mean(medGrade),1),
-  #               clustCount = n())
-  # })
-  # 
-  # 
-  # output$clustTable <- renderTable({
-  #   clustSummary
-  # })
-  
   #render summary table of clusters
   output$clustTable <- renderTable({
     cragSummaryClust() %>% group_by(cluster) %>%
@@ -238,6 +188,26 @@ shinyServer(function(input, output, session) {
                 "Avg. Rating" = round(mean(avgRating),2),
                 "Avg. Grade" = round(mean(medGrade),1))
   })
+  
+  #render dynamic UI input to filter plot by cluster
+  output$clustFilter <- renderUI({
+    selectizeInput("clustFilter", "Filter Plot by Cluster",
+                 choices = 1:input$nClust,
+                 selected = 1, multiple = TRUE)
+  })
+  
+  #render jitter plot of clusters
+  output$clustPlot <- renderPlot({
+    g <- ggplot(filter(cragSummaryClust(),
+                       cragCountry == input$cragCountry,
+                       cluster == input$clustFilter))
+    g + geom_jitter(aes(x = medGrade, y = avgRating, size = ascentCount, color = cluster))
+  })
+  
+  # g + geom_jitter(aes(x = medGrade, y = avgRating, size = ascentCount, color = cluster))
+  # g + geom_jitter(aes(x = ascentCount, y = avgRating, size = medGrade, color = cluster)) + scale_x_log10()
+  # g + geom_jitter(aes(x = ascentCount, y = medGrade, size = avgRating, color = cluster)) + scale_x_log10()
+  
   
   
   ########################################################
