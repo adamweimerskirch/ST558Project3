@@ -1,9 +1,19 @@
 library(shiny)
 library(tidyverse)
 
-ascentData <- read_csv("../ascentDataSample.csv")
-routeData <- read_csv("../routeData.csv")
+ascentData <- read_csv("../ascentData.csv")
 
+########################################################
+### Route Data Tab Support
+#create route data frame
+routeData <- ascentData %>% select(name, climb_type, crag, sector, country, rating, grade_usa, comment)
+routeData$climb_type <- routeData$climb_type %>% recode(`0` = "Route", `1` = "Boulder")
+routeData$country[routeData$country == ""] <- "Not Specified"
+routeData$crag[routeData$crag == ""] <- "Not Specified"
+routeData$sector[routeData$sector == ""] <- "Not Specified"
+
+########################################################
+### EDA Tab Support
 g <- ggplot(ascentData)
 
 # function to generate pareto chart courtesy Davide Passaretti on RPubs
@@ -54,6 +64,7 @@ ggpareto <- function(x) {
 
 
 ########################################################
+### Peak Grade Tab Support
 
 #create dataset of peak climbing grades for each user
 #improvement: find peak bouldering and route grades separately
@@ -74,54 +85,72 @@ test <- setdiff(1:nrow(peakGrade), train)
 peakGradeTrain <- peakGrade[train, ]
 peakGradeTest <- peakGrade[test, ]
 
-##train models w/ default settings
-#set model training parameters
-trCtrl <- trainControl(method = "repeatedcv", number = 3, repeats = 1)
-
-#capture the time it took to fit the model
-treeBench <- benchmark(
-  #fit regression tree model
-  treeFitDefault <- train(maxGrade ~ height + weight + sex + exp,
-                   data = peakGradeTrain,
-                   method = "rpart",
-                   trControl = trCtrl,
-                   preProcess = c("center", "scale"),
-                   tuneLength = 5)
-  , replications = 1)
-
-# treeBench$elapsed
-# treeFit
-# plot(treeFit) 
-
-#capture the time it took to fit the model
-rfBench <- benchmark(
-  #fit model with Random Forest method
-  rfFitDefault <- caret::train(maxGrade ~ height + weight + sex + exp,
-                        data = peakGradeTrain,
-                        method = "rf",
-                        trControl = trCtrl,
-                        preProcess = c("center", "scale"))
-  , replications = 1)
-
-# rfBench$elapsed
-# rfFit
-# plot(rfFit)
-
+# ##train models w/ default settings
+# #set model training parameters
+# trCtrl <- trainControl(method = "cv", number = 3)
+# 
+# #capture the time it took to fit the model
+# treeBench <- benchmark(
+#   #fit regression tree model
+#   treeFitDefault <- train(maxGrade ~ height + weight + sex + exp,
+#                    data = peakGradeTrain,
+#                    method = "rpart",
+#                    trControl = trCtrl,
+#                    preProcess = c("center", "scale"),
+#                    tuneLength = 5)
+#   , replications = 1)
+# 
+# # treeBench$elapsed
+# # treeFit
+# # plot(treeFit) 
+# 
+# #capture the time it took to fit the model
+# rfBench <- benchmark(
+#   #fit model with Random Forest method
+#   rfFitDefault <- caret::train(maxGrade ~ height + weight + sex + exp,
+#                         data = peakGradeTrain,
+#                         method = "rf",
+#                         trControl = trCtrl,
+#                         preProcess = c("center", "scale"))
+#   , replications = 1)
+# 
+# # rfBench$elapsed
+# # rfFit
+# # plot(rfFit)
 
 ########################################################
+### Crag Summary Support
+
+#function to return the modal value in an object
+modalValue <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+#create crag summary dataset
+cragSummary <- ascentData %>% group_by(crag) %>%
+  summarize(cragCountry = modalValue(country),
+            ascentCount = n(),
+            routeMix = mean(climb_type),
+            avgRating = mean(rating),
+            medGrade = median(grade_id)) %>%
+  filter(ascentCount >= 100)
+
+########################################################
+### Server
 
 # define server logic
 shinyServer(function(input, output, session) {
   
   ########################################################
-  # Route List Tab
+  ### Route List Tab
   # render route data table
   output$routeTable <- renderDataTable({
-    routeData %>% select(name, climb_type, difficulty, crag, sector, country, rating)
+    routeData %>% select(name, sector, crag, country, climb_type, grade_usa, rating, comment)
   })
 
   ########################################################
-  # EDA Tab
+  ### EDA Tab
   # render EDA plot
   observe({
     if(typeof(input$EDAVar) == "character"){
@@ -136,13 +165,15 @@ shinyServer(function(input, output, session) {
   })
   
   ########################################################
-  # Region Summary Tab
-  # render route select country box
-  output$routeCountry <- renderUI({
-    selectizeInput("routeCountry", label = h4("Choose country"),
-                   choices = ascentData$country, selected = 1)
-  })
+  ### Crag Summary Tab
   
+  #possible improvement: allow drillable filtering through country
+  # # render route select country box
+  # output$routeCountry <- renderUI({
+  #   selectizeInput("routeCountry", label = h4("Choose country"),
+  #                  choices = ascentData$country, selected = 1)
+  # })
+  # 
   # # render route select crag box
   # cragChoices <- reactive({
   #   ascentData %>% filter(country == input$routeCountry) %>% select(crag)
@@ -151,7 +182,7 @@ shinyServer(function(input, output, session) {
   #   selectizeInput("routeCrag", label = h4("Choose crag"),
   #                  choices = cragChoices(), selected = 1)
   # })
-  
+  # 
   # # render route select sector box
   # sectorChoices <- reactive({
   #   ascentData %>% filter(country == input$routeCountry, crag == input$routeCrag) %>% select(sector)
@@ -161,23 +192,62 @@ shinyServer(function(input, output, session) {
   #                  choices = sectorChoices(), selected = 1)
   # })
   
-  # filter data frame to selected region
-  regionData <- reactive({
-    ascentData %>% filter(country == input$routeCountry,
-                          crag == input$routeCrag,
-                          sector == input$routeSector)
+  
+  # clusters <- kmeans(scale(cragSummary[-1:-3]), centers = 5, iter.max = 5, algorithm = "MacQueen")
+  # cragSummaryClust <- cragSummary %>% mutate("cluster" = as.factor(clusters$cluster))
+  # clustSummary <- cragSummaryClust %>% group_by(cluster) %>%
+  #   summarize(clustAscents = round(mean(ascentCount),0),
+  #             clustMix= round(mean(routeMix),2),
+  #             clustRating = round(mean(avgRating),2),
+  #             clustGrade = round(mean(medGrade),1),
+  #             clustCount = n())
+  
+  #group crags into user-specified number of clusters
+  cragSummaryClust <- reactive({
+    input$calcClust
+    
+    #isolate so kmeans algorithm only updates on button push
+    isolate({
+      clusters <- kmeans(scale(cragSummary[-1:-3]), centers = input$nClust,
+                         iter.max = 5, algorithm = "MacQueen")
+      cragSummaryClust <- cragSummary %>% mutate("cluster" = as.factor(clusters$cluster))
+    })
   })
   
-  # render region summary
+  # #summarize clusters
+  # clustSummary <- reactive({
+  #   clustSummary <- cragSummaryClust() %>% group_by(cluster) %>%
+  #     summarize(clustAscents = round(mean(ascentCount),0),
+  #               clustMix= round(mean(routeMix),2),
+  #               clustRating = round(mean(avgRating),2),
+  #               clustGrade = round(mean(medGrade),1),
+  #               clustCount = n())
+  # })
+  # 
+  # 
+  # output$clustTable <- renderTable({
+  #   clustSummary
+  # })
+  
+  #render summary table of clusters
+  output$clustTable <- renderTable({
+    cragSummaryClust() %>% group_by(cluster) %>%
+      summarize("Number of Crags" = n(),
+                "Avg. Ascents" = round(mean(ascentCount),0),
+                "Avg. Route Mix" = round(mean(routeMix),2),
+                "Avg. Rating" = round(mean(avgRating),2),
+                "Avg. Grade" = round(mean(medGrade),1))
+  })
+  
+  
   ########################################################
-  ### Modeling Tab
+  ### Peak Grade Tab
   ### predicting peak climbing grade for each user w/ regression tree and random forest
 
   ##allow user to select their own model parameters
   #
   
   ##allow user to use model to predict peak grade of a new climber
-  #can I convert back to USA grade?
   
   #improvement: dynamically update allowable height and weight ranges by sex to avoid regions with little data for fitting the model
   # output$predictHeight <- renderUI({
@@ -196,10 +266,11 @@ shinyServer(function(input, output, session) {
   #                step = 5)
   # })
   
+  #update prediction inputs
   predData <- reactive({
     input$makePrediction
 
-    #update prediction inputs
+    #isolate so that new prediction is made only when button is pressed
     isolate(
       predData <- cbind(height = input$predictHeight,
                         weight = input$predictWeight,
@@ -207,7 +278,9 @@ shinyServer(function(input, output, session) {
                         exp = input$predictExp)
     )
   })
-
+  
+  #output predictions
+  #can I convert back to USA grade?
   output$treePredict <- renderText({
     treePredict <- predict(treeFitDefault, predData())
   })

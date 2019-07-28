@@ -15,9 +15,8 @@ shinyUI(fluidPage(
                 menuItem("Information", tabName = "info", icon = icon("info")),
                 menuItem("Route List", tabName = "table", icon = icon("table")),
                 menuItem("Data Exploration", tabName = "eda", icon = icon("calculator")),
-                menuItem("Country Summary", tabName = "country", icon = icon("globe-americas")),
-                menuItem("Cluster Analysis", tabName = "cluster", icon = icon("chart-bar")),
-                menuItem("Modeling", tabName = "model", icon = icon("chart-line"))
+                menuItem("Crag Summary", tabName = "crag", icon = icon("globe-americas")),
+                menuItem("Peak Grade Model", tabName = "peak", icon = icon("chart-line"))
             )
         ),
         
@@ -25,7 +24,7 @@ shinyUI(fluidPage(
         dashboardBody(
             tabItems(
                 ########################################################
-                #information tab
+                ### Information Tab
                 tabItem(tabName = "info",
                         fluidRow(
                             box("information about dataset and abilities of the app, must have two dynamic UI elements, button to save plot to a file, option to save data currently being used for a plot to a csv, click / select region, math type, link to something, formatted text")
@@ -35,7 +34,7 @@ shinyUI(fluidPage(
                 # source("../infoTabTest.R", local = TRUE),
                 
                 ########################################################
-                # data tab
+                ### Route Data Tab
                 tabItem(tabName = "table",
                         fluidRow(
                             box("Search for routes in various countries, crags, and sectors")
@@ -48,7 +47,7 @@ shinyUI(fluidPage(
                         ),
                 
                 ########################################################
-                # data exploration tab
+                ### EDA Tab
                 tabItem(tabName = "eda",
                         fluidRow(
                             box("data exploration, user creates common numeric and graphical summaries", "create histogram for numeric, pareto for categorical")
@@ -66,34 +65,48 @@ shinyUI(fluidPage(
                 ),
                 
                 ########################################################
-                # region summary tab
-                tabItem(tabName = "country",
+                ### Crag Summary Tab
+                tabItem(tabName = "crag",
                         fluidRow(
-                            box("route summary statistics by region")
+                            box("crag summary statistics by region")
                         ),
 
                         fluidRow(
                             box(
-                                uiOutput("routeCountry")#,
+                                selectizeInput("cragCountry", "Select Country",
+                                               choices = cragSummary$cragCountry)
+                                # uiOutput("routeCountry"),
                                 # uiOutput("routeCrag"),
                                 # uiOutput("routeSector")
+                            ),
+                            box(
+                                sliderInput("nClust", "Number of Clusters",
+                                            min = 1, max = 10, value = 5, step = 1),
+                                actionButton("calcClust", "Go!")
                             )
+                        ),
+                        fluidRow(
+                            box(),
+                            box(tableOutput("clustTable"))
                         )
                 ),
                 
                 ########################################################
-                # cluster analysis tab
-                tabItem(tabName = "cluster",
-                        fluidRow(
-                            box("cluster analysis")
-                            )
-                        ),
-                
-                ########################################################
-                # Modeling Tab
-                tabItem(tabName = "model",
+                ### Peak Grade Model Tab
+                tabItem(tabName = "peak",
                         fluidRow(
                             box("data models, at least two supervised learning models, user functionality to change user settings, and prediction")
+                        ),
+                        #row for modeling
+                        fluidRow(
+                          box(
+                              checkboxInput("userModel", "Specify Custom Model"),
+                              selectizeInput("userModelParams", "Specify Variables",
+                                             choices = peakGrade[2:5]),
+                              checkboxInput("userModelInt", "Include Interaction Terms"),
+                              actionButton("fitUserModel", "Fit Custom Model")
+                          ),
+                          box("include RMSE comparisons table user vs. default for both models")
                         ),
                         #row for prediction
                         fluidRow(
