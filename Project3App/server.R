@@ -1,5 +1,9 @@
 library(shiny)
 library(tidyverse)
+library(randomForest)
+library(tree)
+library(caret)
+library(rbenchmark)
 
 ascentData <- read_csv("../ascentData.csv")
 
@@ -64,9 +68,27 @@ ggpareto <- function(x) {
 
 
 ########################################################
+### Crag Summary Support
+
+#function to return the modal value in an object
+modalValue <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+#create crag summary dataset
+cragSummary <- ascentData %>% group_by(crag) %>%
+  summarize(cragCountry = modalValue(country),
+            ascentCount = n(),
+            routeMix = mean(climb_type),
+            avgRating = mean(rating),
+            medGrade = median(grade_id)) %>%
+  filter(ascentCount >= 100)
+
+########################################################
 ### Peak Grade Tab Support
 
-#create dataset of peak climbing grades for each user
+##create dataset of peak climbing grades for each user
 #improvement: find peak bouldering and route grades separately
 peakGrade <- ascentData %>%
   group_by(user_id) %>%
@@ -85,56 +107,28 @@ test <- setdiff(1:nrow(peakGrade), train)
 peakGradeTrain <- peakGrade[train, ]
 peakGradeTest <- peakGrade[test, ]
 
-# ##train models w/ default settings
-# #set model training parameters
-# trCtrl <- trainControl(method = "cv", number = 3)
-# 
-# #capture the time it took to fit the model
-# treeBench <- benchmark(
-#   #fit regression tree model
-#   treeFitDefault <- train(maxGrade ~ height + weight + sex + exp,
-#                    data = peakGradeTrain,
-#                    method = "rpart",
-#                    trControl = trCtrl,
-#                    preProcess = c("center", "scale"),
-#                    tuneLength = 5)
-#   , replications = 1)
-# 
-# # treeBench$elapsed
-# # treeFit
-# # plot(treeFit) 
-# 
-# #capture the time it took to fit the model
-# rfBench <- benchmark(
-#   #fit model with Random Forest method
-#   rfFitDefault <- caret::train(maxGrade ~ height + weight + sex + exp,
-#                         data = peakGradeTrain,
-#                         method = "rf",
-#                         trControl = trCtrl,
-#                         preProcess = c("center", "scale"))
-#   , replications = 1)
-# 
-# # rfBench$elapsed
-# # rfFit
-# # plot(rfFit)
+##fit default models
+#capture the time it took to fit the model
+treeBench <- benchmark(
+  #fit regression tree model
+  treeFitDefault <- tree(maxGrade ~ height + weight + sex + exp,
+                         data = peakGradeTrain)
+  , replications = 1)
 
-########################################################
-### Crag Summary Support
+treeBench$elapsed
+treeFitDefault
 
-#function to return the modal value in an object
-modalValue <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
+#capture the time it took to fit the model
+rfBench <- benchmark(
+  rfFitDefault <- randomForest(maxGrade ~ height + weight + sex + exp,
+                             data = peakGradeTrain,
+                             mtry = 2,
+                             ntree = 200,
+                             importance = TRUE)
+  , replications = 1)
 
-#create crag summary dataset
-cragSummary <- ascentData %>% group_by(crag) %>%
-  summarize(cragCountry = modalValue(country),
-            ascentCount = n(),
-            routeMix = mean(climb_type),
-            avgRating = mean(rating),
-            medGrade = median(grade_id)) %>%
-  filter(ascentCount >= 100)
+rfBench$elapsed
+rfFitDefault
 
 ########################################################
 ### Server
@@ -193,7 +187,8 @@ shinyServer(function(input, output, session) {
   output$clustFilter <- renderUI({
     selectizeInput("clustFilter", "Filter Plot by Cluster",
                  choices = 1:input$nClust,
-                 selected = 1, multiple = TRUE)
+                 selected = 1:input$nClust,
+                 multiple = TRUE)
   })
   
   #render jitter plot of clusters
@@ -214,27 +209,23 @@ shinyServer(function(input, output, session) {
   ### Peak Grade Tab
   ### predicting peak climbing grade for each user w/ regression tree and random forest
 
-  ##allow user to select their own model parameters
-  #
+  ##allow user to fit a custom model
+  
+    #fit regression tree model
+    treeFitUser <- reactive({
+      tree(as.formula(paste("maxGrade ~ ",paste(input$independent,collapse="+"))),
+                        data = peakGradeTrain)
+    })
+  
+    # rfFitUser <- randomForest(maxGrade ~ height + weight + sex + exp,
+    #                            data = peakGradeTrain,
+    #                            mtry = 2,
+    #                            ntree = 200,
+    #                            importance = TRUE)
   
   ##allow user to use model to predict peak grade of a new climber
   
   #improvement: dynamically update allowable height and weight ranges by sex to avoid regions with little data for fitting the model
-  # output$predictHeight <- renderUI({
-  #   numericInput("predictHeight", label = "Height",
-  #                value = round(median(peakGrade$height),0),
-  #                min = 150,
-  #                max = 200,
-  #                step = 5)
-  # })
-  # 
-  # output$predictWeight <- renderUI({
-  #   numericInput("predictWeight", label = "Weight",
-  #                value = round(median(peakGrade$height),0),
-  #                min = 40,
-  #                max = 100,
-  #                step = 5)
-  # })
   
   #update prediction inputs
   predData <- reactive({
@@ -242,21 +233,18 @@ shinyServer(function(input, output, session) {
 
     #isolate so that new prediction is made only when button is pressed
     isolate(
-      predData <- cbind(height = input$predictHeight,
-                        weight = input$predictWeight,
-                        sex = input$predictSex,
-                        exp = input$predictExp)
+      predData <- as.data.frame(cbind(height = input$predictHeight,
+                                      weight = input$predictWeight,
+                                      sex = input$predictSex,
+                                      exp = input$predictExp))
     )
   })
   
   #output predictions
   #can I convert back to USA grade?
-  output$treePredict <- renderText({
-    treePredict <- predict(treeFitDefault, predData())
-  })
-  output$rfPredict <- renderText({
-    rfPredict <- predict(rfFitDefault, predData())
-  })
+  output$treePredict <- renderText({predict(treeFitDefault, predData())})
+  output$rfPredict <- renderText({predict(rfFitDefault, predData())})
+  output$userTreePredict <- renderText({predict(userTreeFit, predData())})
   ########################################################
 })
 

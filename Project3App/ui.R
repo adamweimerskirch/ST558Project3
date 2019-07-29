@@ -14,7 +14,7 @@ shinyUI(fluidPage(
             sidebarMenu(
                 menuItem("Information", tabName = "info", icon = icon("info")),
                 menuItem("Route List", tabName = "table", icon = icon("table")),
-                menuItem("Data Exploration", tabName = "eda", icon = icon("calculator")),
+                menuItem("Data Exploration", tabName = "eda", icon = icon("chart-bar")),
                 menuItem("Crag Summary", tabName = "crag", icon = icon("globe-americas")),
                 menuItem("Peak Grade Model", tabName = "peak", icon = icon("chart-line"))
             )
@@ -102,8 +102,9 @@ shinyUI(fluidPage(
                         fluidRow(
                           box(
                               checkboxInput("userModel", "Specify Custom Model"),
-                              selectizeInput("userModelParams", "Specify Variables",
-                                             choices = peakGrade[2:5]),
+                              selectizeInput("independent", "Specify Variables",
+                                             choices = names(peakGrade[2:5]),
+                                             multiple = TRUE),
                               checkboxInput("userModelInt", "Include Interaction Terms"),
                               actionButton("fitUserModel", "Fit Custom Model")
                           ),
@@ -113,9 +114,6 @@ shinyUI(fluidPage(
                         fluidRow(
                             #user prediction inputs
                             box(
-                                # selectizeInput("predictSex", "Sex", c("Male","Female")),
-                                # uiOutput("predictHeight"),
-                                # uiOutput("predictWeight"),
                                 numericInput("predictSex", "Sex (0 = M, 1 = F)",
                                              value = 0,
                                              min = 0, max = 1),
@@ -134,7 +132,8 @@ shinyUI(fluidPage(
                             #prediction result
                             box(
                                 textOutput("treePredict"),
-                                textOutput("rfPredict")
+                                textOutput("rfPredict"),
+                                textOutput("userTreePredict")
                             )
                         )
                 )
