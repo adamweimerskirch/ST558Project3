@@ -4,8 +4,9 @@ library(randomForest)
 library(tree)
 library(caret)
 library(rbenchmark)
+library(stringi)
 
-ascentData <- read_csv("../ascentData.csv")
+ascentData <- read_csv("../ascentDataSample.csv")
 
 ########################################################
 ### Route Data Tab Support
@@ -199,12 +200,7 @@ shinyServer(function(input, output, session) {
     g + geom_jitter(aes(x = medGrade, y = avgRating, size = ascentCount, color = cluster))
   })
   
-  # g + geom_jitter(aes(x = medGrade, y = avgRating, size = ascentCount, color = cluster))
-  # g + geom_jitter(aes(x = ascentCount, y = avgRating, size = medGrade, color = cluster)) + scale_x_log10()
-  # g + geom_jitter(aes(x = ascentCount, y = medGrade, size = avgRating, color = cluster)) + scale_x_log10()
-  
-  
-  
+
   ########################################################
   ### Peak Grade Tab
   ### predicting peak climbing grade for each user w/ regression tree and random forest
@@ -212,10 +208,21 @@ shinyServer(function(input, output, session) {
   ##allow user to fit a custom model
   
     #fit regression tree model
-    treeFitUser <- reactive({
-      tree(as.formula(paste("maxGrade ~ ",paste(input$independent,collapse="+"))),
-                        data = peakGradeTrain)
+    userTreeFit <- reactive({
+      if(input$fitUserModel == 0) return()
+      input$fitUserModel
+      
+      isolate({tree(as.formula(paste("maxGrade ~ ", paste(input$independent,collapse = " + "))),
+                   data = peakGradeTrain)})
     })
+  
+  #fit regression tree model
+  output$userModelForm <- renderText({
+    if(input$fitUserModel == 0) return()
+    input$fitUserModel
+
+    isolate({paste("maxGrade ~ ",paste(input$independent,collapse=" + "))})
+  })
   
     # rfFitUser <- randomForest(maxGrade ~ height + weight + sex + exp,
     #                            data = peakGradeTrain,
@@ -242,9 +249,19 @@ shinyServer(function(input, output, session) {
   
   #output predictions
   #can I convert back to USA grade?
-  output$treePredict <- renderText({predict(treeFitDefault, predData())})
-  output$rfPredict <- renderText({predict(rfFitDefault, predData())})
-  output$userTreePredict <- renderText({predict(userTreeFit, predData())})
+  output$treePredict <- renderText({
+    if(input$makePrediction == 0) return()
+    predict(treeFitDefault, predData())
+    })
+  output$rfPredict <- renderText({
+    if(input$makePrediction == 0) return()
+    predict(rfFitDefault, predData())
+    })
+  output$userTreePredict <- renderText({
+    if(input$makePrediction == 0) return()
+    if(input$fitUserModel == 0) return()
+    predict(userTreeFit(), predData())
+    })
   ########################################################
 })
 

@@ -101,14 +101,14 @@ shinyUI(fluidPage(
                         #row for modeling
                         fluidRow(
                           box(
-                              checkboxInput("userModel", "Specify Custom Model"),
-                              selectizeInput("independent", "Specify Variables",
+                              selectizeInput("independent", "Specify Variables for Custom Model",
                                              choices = names(peakGrade[2:5]),
                                              multiple = TRUE),
-                              checkboxInput("userModelInt", "Include Interaction Terms"),
-                              actionButton("fitUserModel", "Fit Custom Model")
+                              #checkboxInput("interaction", "Include Interaction Terms"),
+                              actionButton("fitUserModel", "Fit Custom Model"),
+                              textOutput("userModelForm")
                           ),
-                          box("include RMSE comparisons table user vs. default for both models")
+                          box()
                         ),
                         #row for prediction
                         fluidRow(
