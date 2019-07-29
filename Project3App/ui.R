@@ -87,6 +87,7 @@ shinyUI(fluidPage(
                                                choices = stri_sort(cragSummary$cragCountry),
                                                selected = "USA"),
                                 uiOutput("clustFilter"),
+                                downloadButton("toCSV", "Download Plot Data to .csv"),
                                 plotOutput("clustPlot")
                             )
                         )

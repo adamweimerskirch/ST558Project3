@@ -84,7 +84,7 @@ cragSummary <- ascentData %>% group_by(crag) %>%
             routeMix = mean(climb_type),
             avgRating = mean(rating),
             medGrade = median(grade_id)) %>%
-  filter(ascentCount >= 100)
+  filter(ascentCount >= 2)
 
 ########################################################
 ### Peak Grade Tab Support
@@ -192,14 +192,26 @@ shinyServer(function(input, output, session) {
                  multiple = TRUE)
   })
   
+  #filter crag data to be plotted
+  cragPlotData <- reactive({
+    cragSummaryClust() %>% filter(cragCountry == input$cragCountry, cluster == input$clustFilter)
+  })  
+  
   #render jitter plot of clusters
   output$clustPlot <- renderPlot({
-    g <- ggplot(filter(cragSummaryClust(),
+    g <- ggplot(filter(cragPlotData(),
                        cragCountry == input$cragCountry,
                        cluster == input$clustFilter))
     g + geom_jitter(aes(x = medGrade, y = avgRating, size = ascentCount, color = cluster))
   })
   
+  #download plotted data to csv
+  output$toCSV <- downloadHandler(
+    filename = "TESTDOWNLOADDATA.csv",
+    content = function(file) {
+      write.csv(cragPlotData(), file, row.names = FALSE)
+    }
+  )
 
   ########################################################
   ### Peak Grade Tab
