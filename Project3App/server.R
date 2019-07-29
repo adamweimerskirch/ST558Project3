@@ -198,18 +198,27 @@ shinyServer(function(input, output, session) {
   })  
   
   #render jitter plot of clusters
+  cragPlotFunc <- function(){
+    ggplot(cragPlotData()) +
+      geom_jitter(aes(x = medGrade, y = avgRating, size = ascentCount, color = cluster))
+  }
   output$clustPlot <- renderPlot({
-    g <- ggplot(filter(cragPlotData(),
-                       cragCountry == input$cragCountry,
-                       cluster == input$clustFilter))
-    g + geom_jitter(aes(x = medGrade, y = avgRating, size = ascentCount, color = cluster))
-  })
+    cragPlotFunc()
+    })
   
   #download plotted data to csv
   output$toCSV <- downloadHandler(
-    filename = "TESTDOWNLOADDATA.csv",
-    content = function(file) {
+    filename = "cragData.csv",
+    content = function(file){
       write.csv(cragPlotData(), file, row.names = FALSE)
+    }
+  )
+  
+  #download plot
+  output$toPNG <- downloadHandler(
+    filename = "cragPlot.png",
+    content = function(file){
+      ggsave(file, plot = cragPlotFunc(), device = "png")
     }
   )
 

@@ -88,6 +88,7 @@ shinyUI(fluidPage(
                                                selected = "USA"),
                                 uiOutput("clustFilter"),
                                 downloadButton("toCSV", "Download Plot Data to .csv"),
+                                downloadButton("toPNG", "Download Plot Image to .png"),
                                 plotOutput("clustPlot")
                             )
                         )
