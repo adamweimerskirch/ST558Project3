@@ -1,4 +1,5 @@
 library(shiny)
+library(shinydashboard)
 library(tidyverse)
 library(randomForest)
 library(tree)
@@ -8,6 +9,12 @@ library(stringi)
 
 ascentData <- read_csv("../ascentDataSample.csv")
 
+########################################################
+### Information Tab Support
+
+# url <- a("Google Homepage", href="https://www.google.com/")
+# output$tab <- renderUI({
+#   tagList("URL link:", url)
 ########################################################
 ### Route Data Tab Support
 #create route data frame
@@ -237,12 +244,30 @@ shinyServer(function(input, output, session) {
                    data = peakGradeTrain)})
     })
   
-  #fit regression tree model
+  #render model form
   output$userModelForm <- renderText({
     if(input$fitUserModel == 0) return()
     input$fitUserModel
 
     isolate({paste("maxGrade ~ ",paste(input$independent,collapse=" + "))})
+  })
+  
+  #render model form
+  output$userModelFormMath <- renderUI({
+    if(input$fitUserModel == 0) return()
+    input$fitUserModel
+    
+    isolate({
+      withMathJax(
+        helpText(
+          paste("$$maxGrade \\sim ",paste(input$independent,collapse=" + "), "$$")
+          )
+      )
+      })
+  })
+  
+  output$ex1 <- renderUI({
+    withMathJax(helpText('Dynamic output 1:  $$\\alpha^2$$'))
   })
   
     # rfFitUser <- randomForest(maxGrade ~ height + weight + sex + exp,

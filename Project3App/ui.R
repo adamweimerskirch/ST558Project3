@@ -1,5 +1,11 @@
 library(shiny)
 library(shinydashboard)
+library(tidyverse)
+library(randomForest)
+library(tree)
+library(caret)
+library(rbenchmark)
+library(stringi)
 
 # infoTabTest <- source("infoTabTest.R", local = TRUE)
 
@@ -7,7 +13,7 @@ library(shinydashboard)
 shinyUI(fluidPage(
     
     dashboardPage(
-        dashboardHeader(title = "Climbing Data"),
+        dashboardHeader(title = "Rock Climbing"),
         
         # sidebar
         dashboardSidebar(
@@ -27,22 +33,33 @@ shinyUI(fluidPage(
                 ### Information Tab
                 tabItem(tabName = "info",
                         fluidRow(
-                            box("information about dataset and abilities of the app, must have two dynamic UI elements, button to save plot to a file, option to save data currently being used for a plot to a csv, click / select region, math type, link to something, formatted text")
-                            )
-                        ),
-                
-                # source("../infoTabTest.R", local = TRUE),
+                            box(width = 12,
+    h3("This app allows the user to explore data about rock climbing routes around the world!"), br(),
+    h2("Tabs"),
+    h4("Route List", style = "color:blue"), "This tab allows the user to browse through the routes in the dataset, and to filter and subset by any of the provided variables.  Variables that would not be of interest to the typical user are not displayed for ease of viewing.", br(),
+    h4("Data Exploration", style = "color:blue"), "This tab allows the user to create common numeric and graphical summaries of the variables in the dataset.", br(),
+    h4("Crag Summary", style = "color:blue"), "This tab uses k-means clustering to group crags into similar clusters, and displays the results graphically by country.", br(),
+    h4("Peak Grade Model", style = "color:blue"), "This tab uses supervised learning models to predict a climber's peak route difficulty grade, given a few predictor variables for the climber.", br(),
+    h2("Data"), "The data in this set is from ",
+        a("8a.nu", href="https://www.8a.nu/"),
+        ", which is a website for Global Climbing News.  The dataset was compiled by David Cohen and posted to his ",
+        a("Kaggle page", href="https://www.kaggle.com/dcohen21/8anu-climbing-logbook)"),
+        ".  Each record in the dataset is a climb completed by an 8a.nu user and then logged on the site.  More detail about the variables in the dataset is provided on the Data Exploration tab."
+                        )
+                        )),
                 
                 ########################################################
                 ### Route Data Tab
                 tabItem(tabName = "table",
                         fluidRow(
-                            box("Search for routes in various countries, crags, and sectors")
+                            box(width = 12,
+                                h4("Search for routes in various countries, crags, and sectors."), style = "color:blue")
                         ),
 
                         
                         fluidRow(
-                            box(dataTableOutput("routeTable"))
+                            box(width = 12,
+                                dataTableOutput("routeTable"))
                             )
                         ),
                 
@@ -50,13 +67,21 @@ shinyUI(fluidPage(
                 ### EDA Tab
                 tabItem(tabName = "eda",
                         fluidRow(
-                            box("data exploration, user creates common numeric and graphical summaries", "create histogram for numeric, pareto for categorical")
+                            box(width = 12,
+                                h4("Explore the data with numeric and graphical summaries for the variable of your choice.", style = "color:blue")
+                                )
                             ),
 
                         fluidRow(
+                            box(width = 4,
                             selectizeInput("EDAVar",
                                            "Choose variable for EDA",
                                            choices = names(ascentData))
+                            ),
+                            box(width = 8,
+                                h5("Numeric summary"),
+                                "Numeric summary"
+                            )
                         ),
 
                         fluidRow(
@@ -69,7 +94,8 @@ shinyUI(fluidPage(
                 tabItem(tabName = "crag",
                         #row for page description
                         fluidRow(
-                            box(h4("Use this tab to find other crags similar to your favorites!  This tab uses k-means clustering to group similar crags by route mix (bouldering vs. roped routes), difficulty, and rating."))
+                            box(width = 12,
+                                h4("Use this tab to find other crags similar to your favorites!  This tab uses k-means clustering to group similar crags by route mix (bouldering vs. roped routes), difficulty, and rating.", style = "color:blue"))
                         ),
                         #row for user input and cluster summary
                         fluidRow(
@@ -82,7 +108,7 @@ shinyUI(fluidPage(
                         ),
                         #row for cluster plot
                         fluidRow(
-                            box(
+                            box(width = 12,
                                 selectizeInput("cragCountry", "Filter Plot by Country",
                                                choices = stri_sort(cragSummary$cragCountry),
                                                selected = "USA"),
@@ -98,7 +124,8 @@ shinyUI(fluidPage(
                 ### Peak Grade Model Tab
                 tabItem(tabName = "peak",
                         fluidRow(
-                            box("data models, at least two supervised learning models, user functionality to change user settings, and prediction")
+                            box(width = 12,
+                                h4("Use this tab to predict your peak climbing grade at different years of experience!", style = "color:blue"))
                         ),
                         #row for modeling
                         fluidRow(
@@ -108,7 +135,8 @@ shinyUI(fluidPage(
                                              multiple = TRUE),
                               #checkboxInput("interaction", "Include Interaction Terms"),
                               actionButton("fitUserModel", "Fit Custom Model"),
-                              textOutput("userModelForm")
+                              textOutput("userModelForm"),
+                              uiOutput("userModelFormMath")
                           ),
                           box()
                         ),
@@ -135,7 +163,8 @@ shinyUI(fluidPage(
                             box(
                                 textOutput("treePredict"),
                                 textOutput("rfPredict"),
-                                textOutput("userTreePredict")
+                                textOutput("userTreePredict"),
+                                uiOutput("ex1")
                             )
                         )
                 )
