@@ -28,8 +28,8 @@ ascentData$country <- stri_trans_toupper(ascentData$country)
 ascentData$user_city <- stri_trans_totitle(ascentData$user_city)
 ascentData$user_country <- stri_trans_toupper(ascentData$user_country)
 
-#filter to random set of ascents
-miniSample <- sample(1:nrow(ascentData), 1000)
+#filter to random set of ascents to meet GitHub file size limits
+miniSample <- sample(1:nrow(ascentData), nrow(ascentData)*0.1)
 ascentDataSample <- ascentData[miniSample, ]
 
 #write data to csv
