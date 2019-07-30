@@ -75,16 +75,6 @@ shinyUI(fluidPage(
                         fluidRow(
                             box(width = 4,
                                 h4("Choose EDA Variable"),
-                                # selectInput("EDAType",
-                                #             "Choose Variable Type",
-                                #             choices = NULL,
-                                #             selected = NULL,
-                                #             multiple = FALSE),
-                                # selectInput("EDAVar",
-                                #             "Choose EDA Variable",
-                                #             choices = NULL,
-                                #             selected = NULL,
-                                #             multiple = FALSE)
                                 uiOutput("EDAType"),
                                 uiOutput("EDAVar")
                             ),
@@ -98,7 +88,7 @@ shinyUI(fluidPage(
                             box(width = 6,
                                 plotOutput("EDAPlot")),
                             box(width = 6,
-                                h4("troubleshooting")
+                                h4("troubleshooting"),
                                 verbatimTextOutput("EDAPrint"),
                                 h5("I cannot for the life of me figure out why this is returning a list rather than a vector, and I cannot coerce.  This is preventing me from plotting.", style = "color:blue"))
                         )
@@ -128,9 +118,10 @@ shinyUI(fluidPage(
                         fluidRow(
                             box(width = 12,
                                 h4("Visualize Clusters by Country"),
+                                h5("Note: Try ESP and USA"),
                                 selectizeInput("cragCountry", "Filter Plot by Country",
                                                choices = stri_sort(cragSummary$cragCountry),
-                                               selected = "USA"),
+                                               selected = "ESP"),
                                 uiOutput("clustFilter"),
                                 downloadButton("toCSV", "Download Plot Data to .csv"),
                                 downloadButton("toPNG", "Download Plot Image to .png"),

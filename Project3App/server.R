@@ -6,6 +6,7 @@ library(tree)
 library(caret)
 library(rbenchmark)
 library(stringi)
+library(DBI)
 
 ascentData <- read_csv("../ascentDataSample.csv")
 
@@ -91,7 +92,7 @@ cragSummary <- ascentData %>% group_by(crag) %>%
             routeMix = mean(climb_type),
             avgRating = mean(rating),
             medGrade = median(grade_id)) %>%
-  filter(ascentCount >= 2)
+  filter(ascentCount >= 10)
 
 ########################################################
 ### Peak Grade Tab Support
@@ -124,19 +125,17 @@ treeBench <- benchmark(
   , replications = 1)
 
 treeBench$elapsed
-treeFitDefault
 
 #capture the time it took to fit the model
 rfBench <- benchmark(
   rfFitDefault <- randomForest(maxGrade ~ height + weight + sex + exp,
                              data = peakGradeTrain,
                              mtry = 2,
-                             ntree = 200,
+                             ntree = 100,
                              importance = TRUE)
   , replications = 1)
 
 rfBench$elapsed
-rfFitDefault
 
 ########################################################
 ### Server
