@@ -7,7 +7,50 @@ library(caret)
 library(rbenchmark)
 library(stringi)
 
-# infoTabTest <- source("infoTabTest.R", local = TRUE)
+ascentData <- read_csv("../ascentDataSample.csv")
+
+########################################################
+### Route Data Tab Support
+#create route data frame
+routeData <- ascentData %>% select(name, climb_type, crag, sector, country, rating, grade_usa, comment)
+routeData$climb_type <- routeData$climb_type %>% recode(`0` = "Route", `1` = "Boulder")
+routeData$country[routeData$country == ""] <- "Not Specified"
+routeData$crag[routeData$crag == ""] <- "Not Specified"
+routeData$sector[routeData$sector == ""] <- "Not Specified"
+
+########################################################
+### Crag Summary Support
+
+#function to return the modal value in an object
+modalValue <- function(x) {
+    ux <- unique(x)
+    ux[which.max(tabulate(match(x, ux)))]
+}
+
+#create crag summary dataset
+cragSummary <- ascentData %>% group_by(crag) %>%
+    summarize(cragCountry = modalValue(country),
+              ascentCount = n(),
+              routeMix = mean(climb_type),
+              avgRating = mean(rating),
+              medGrade = median(grade_id)) %>%
+    filter(ascentCount >= 10)
+
+########################################################
+### Peak Grade Tab Support
+
+##create dataset of peak climbing grades for each user
+#improvement: find peak bouldering and route grades separately
+peakGrade <- ascentData %>%
+    group_by(user_id) %>%
+    summarize("height" = max(height),
+              "weight" = max(weight),
+              "sex" = max(sex),
+              "exp" = max(year) - min(started),
+              "nClimbs" = n(),
+              "maxGrade" = max(grade_id),
+              "maxScore" = max(total_score)) %>%
+    filter(height > 100, weight > 40, exp > 0, exp < 100, maxGrade > 0, maxScore > 0)
 
 # define UI
 shinyUI(fluidPage(

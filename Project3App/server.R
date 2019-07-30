@@ -27,7 +27,6 @@ routeData$sector[routeData$sector == ""] <- "Not Specified"
 
 ########################################################
 ### EDA Tab Support
-g <- ggplot(ascentData)
 
 # function to generate pareto chart courtesy Davide Passaretti on RPubs
 # https://rpubs.com/dav1d00/ggpareto
