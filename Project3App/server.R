@@ -236,7 +236,7 @@ shinyServer(function(input, output, session) {
   ##allow user to fit a custom model
   
     #fit regression tree model
-    userTreeFit <- reactive({
+    treeFitUser <- reactive({
       if(input$fitUserModel == 0) return()
       input$fitUserModel
       
@@ -244,13 +244,19 @@ shinyServer(function(input, output, session) {
                    data = peakGradeTrain)})
     })
   
-  #render model form
-  output$userModelForm <- renderText({
-    if(input$fitUserModel == 0) return()
-    input$fitUserModel
-
-    isolate({paste("maxGrade ~ ",paste(input$independent,collapse=" + "))})
-  })
+    #fit random forest model
+    rfFitUser <- reactive({
+      if(input$fitUserModel == 0) return()
+      input$fitUserModel
+      
+      isolate({randomForest(as.formula(paste("maxGrade ~ ", paste(input$independent,collapse = " + "))),
+                            data = peakGradeTrain,
+                            mtry = 2,
+                            ntree = 100,
+                            importance = TRUE)
+        })
+    })
+  
   
   #render model form
   output$userModelFormMath <- renderUI({
@@ -266,15 +272,31 @@ shinyServer(function(input, output, session) {
       })
   })
   
-  output$ex1 <- renderUI({
-    withMathJax(helpText('Dynamic output 1:  $$\\alpha^2$$'))
-  })
+  ##assess fit of active models
+  #predict response for each method
+  treeTestDefault <- predict(treeFitDefault, peakGradeTest)
+  rfTestDefault <- predict(rfFitDefault, peakGradeTest)
+  treeTestUser <- reactive({predict(treeFitUser(), peakGradeTest)})
+  rfTestUser <- reactive({predict(rfFitUser(), peakGradeTest)})
+
+  #evaluate performance for each method
+  treeRMSEDefault <- sqrt(mean((treeTestDefault - peakGradeTest$maxGrade)^2))
+  rfRMSEDefault <- sqrt(mean((rfTestDefault - peakGradeTest$maxGrade)^2))
+  treeRMSEUser <- reactive({sqrt(mean((treeTestUser() - peakGradeTest$maxGrade)^2))})
+  rfRMSEUser <- reactive({sqrt(mean((rfTestUser() - peakGradeTest$maxGrade)^2))})
   
-    # rfFitUser <- randomForest(maxGrade ~ height + weight + sex + exp,
-    #                            data = peakGradeTrain,
-    #                            mtry = 2,
-    #                            ntree = 200,
-    #                            importance = TRUE)
+  #render table to compare performance of each model
+  output$modelRMSE <- renderTable({
+    if(input$fitUserModel == 0) return()
+    
+    matrix(
+      c(treeRMSEDefault, rfRMSEDefault, treeRMSEUser(), rfRMSEUser()),
+      nrow = 2,
+      dimnames = list(c("Regression Tree", "Random Forest"),
+                      c("Default", "User")
+                      )
+      )
+  }, rownames = TRUE, digits = 3)
   
   ##allow user to use model to predict peak grade of a new climber
   
@@ -294,20 +316,33 @@ shinyServer(function(input, output, session) {
   })
   
   #output predictions
-  #can I convert back to USA grade?
-  output$treePredict <- renderText({
+  #possible improvement: can I convert back to USA grade scale?
+  treePredictDefault <- reactive({predict(treeFitDefault, predData())})
+  rfPredictDefault <- reactive({predict(rfFitDefault, predData())})
+  treePredictUser <- reactive({predict(treeFitUser(), predData())})
+  rfPredictUser <- reactive({predict(rfFitUser(), predData())})
+  
+  output$modelPredict <- renderTable({
     if(input$makePrediction == 0) return()
-    predict(treeFitDefault, predData())
-    })
-  output$rfPredict <- renderText({
-    if(input$makePrediction == 0) return()
-    predict(rfFitDefault, predData())
-    })
-  output$userTreePredict <- renderText({
-    if(input$makePrediction == 0) return()
-    if(input$fitUserModel == 0) return()
-    predict(userTreeFit(), predData())
-    })
+    
+    if(input$fitUserModel == 0){
+      matrix(
+        c(treePredictDefault(), rfPredictDefault()),
+        nrow = 2,
+        dimnames = list(c("Regression Tree", "Random Forest"),
+                        c("Default")
+                        )
+      )
+    } else {
+      matrix(
+        c(treePredictDefault(), rfPredictDefault(), treePredictUser(), rfPredictUser()),
+        nrow = 2,
+        dimnames = list(c("Regression Tree", "Random Forest"),
+                        c("Default", "User")
+                        )
+      )
+    }
+  }, rownames = TRUE, digits = 0)
   ########################################################
 })
 

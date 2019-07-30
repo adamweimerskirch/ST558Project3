@@ -129,21 +129,23 @@ shinyUI(fluidPage(
                         ),
                         #row for modeling
                         fluidRow(
-                          box(
+                          box(width = 6,
                               selectizeInput("independent", "Specify Variables for Custom Model",
                                              choices = names(peakGrade[2:5]),
                                              multiple = TRUE),
                               #checkboxInput("interaction", "Include Interaction Terms"),
-                              actionButton("fitUserModel", "Fit Custom Model"),
-                              textOutput("userModelForm"),
+                              actionButton("fitUserModel", "Fit User Model"),
                               uiOutput("userModelFormMath")
                           ),
-                          box()
+                          box(width = 6,
+                              h4("Model Fit Comparison: RMSE"),
+                              tableOutput("modelRMSE")
+                              )
                         ),
                         #row for prediction
                         fluidRow(
                             #user prediction inputs
-                            box(
+                            box(width = 6,
                                 numericInput("predictSex", "Sex (0 = M, 1 = F)",
                                              value = 0,
                                              min = 0, max = 1),
@@ -160,11 +162,9 @@ shinyUI(fluidPage(
                                              icon = icon("eye"))
                             ),
                             #prediction result
-                            box(
-                                textOutput("treePredict"),
-                                textOutput("rfPredict"),
-                                textOutput("userTreePredict"),
-                                uiOutput("ex1")
+                            box(width = 6,
+                                h4("Peak Climbing Grade Predictions"),
+                                tableOutput("modelPredict")
                             )
                         )
                 )
