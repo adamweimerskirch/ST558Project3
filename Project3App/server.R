@@ -153,17 +153,44 @@ shinyServer(function(input, output, session) {
 
   ########################################################
   ### EDA Tab
-  # render EDA plot
-  observe({
-    if(typeof(input$EDAVar) == "character"){
-      output$EDAPlot <- renderPlot({
-        g + geom_histogram(aes(x = ascentData$grade_id))
-      })
-    } else {
-      output$EDAPlot <- renderPlot({
-        ggpareto(ascentData$usa_routes)
-      })
-    }
+  #populate variable lists dynamically based on type
+  output$EDAType <- renderUI({
+    selectInput("EDAType", "Filter Variable Type",
+                choices = c("character", "numeric"),
+                selected = "character")
+  })
+  
+  output$EDAVar <- renderUI({
+    selectInput("EDAVar", "Choose EDA Variable",
+                if(input$EDAType == "character"){
+                  choices = names(ascentData)[sapply(ascentData, is.character)]
+                } else {
+                  choices = names(ascentData)[sapply(ascentData, is.numeric)]
+                }
+                )
+  })
+  
+  EDAData <- reactive({
+    ascentData %>% select(input$EDAVar) %>% as.data.frame()
+  })
+  
+  #render numeric summary
+  output$EDASummary <- renderTable({
+    if(input$EDAType == "character") summary(ascentData[input$EDAVar])[1:3]
+    else summary(ascentData[input$EDAVar])[1:6]
+  })
+
+  #render EDA plot
+  output$EDAPlot <- renderPlot({
+    
+    if(input$EDAType == "character") ggpareto(ascentData[input$EDAVar])
+    #else ggplot(ascentData) + geom_histogram(aes(input$EDAVar))
+    else hist(ascentData[input$EDAVar])
+  })
+  
+  #render EDA text for troubleshooting
+  output$EDAPrint <- renderPrint({
+    return(typeof(ascentData[input$EDAVar]))
   })
   
   ########################################################
@@ -193,10 +220,14 @@ shinyServer(function(input, output, session) {
   
   #render dynamic UI input to filter plot by cluster
   output$clustFilter <- renderUI({
-    selectizeInput("clustFilter", "Filter Plot by Cluster",
-                 choices = 1:input$nClust,
-                 selected = 1:input$nClust,
-                 multiple = TRUE)
+    input$calcClust
+    
+    isolate({
+      selectizeInput("clustFilter", "Filter Plot by Cluster",
+                   choices = 1:input$nClust,
+                   selected = 1:input$nClust,
+                   multiple = TRUE)
+    })
   })
   
   #filter crag data to be plotted
@@ -287,15 +318,23 @@ shinyServer(function(input, output, session) {
   
   #render table to compare performance of each model
   output$modelRMSE <- renderTable({
-    if(input$fitUserModel == 0) return()
-    
-    matrix(
-      c(treeRMSEDefault, rfRMSEDefault, treeRMSEUser(), rfRMSEUser()),
-      nrow = 2,
-      dimnames = list(c("Regression Tree", "Random Forest"),
-                      c("Default", "User")
-                      )
+    if(input$fitUserModel == 0){
+      matrix(
+        c(treeRMSEDefault, rfRMSEDefault),
+        nrow = 2,
+        dimnames = list(c("Regression Tree", "Random Forest"),
+                        c("Default")
+                        )
+        )
+    } else {
+      matrix(
+        c(treeRMSEDefault, rfRMSEDefault, treeRMSEUser(), rfRMSEUser()),
+        nrow = 2,
+        dimnames = list(c("Regression Tree", "Random Forest"),
+                        c("Default", "User")
+        )
       )
+    }
   }, rownames = TRUE, digits = 3)
   
   ##allow user to use model to predict peak grade of a new climber
@@ -316,15 +355,16 @@ shinyServer(function(input, output, session) {
   })
   
   #output predictions
-  #possible improvement: can I convert back to USA grade scale?
   treePredictDefault <- reactive({predict(treeFitDefault, predData())})
   rfPredictDefault <- reactive({predict(rfFitDefault, predData())})
   treePredictUser <- reactive({predict(treeFitUser(), predData())})
   rfPredictUser <- reactive({predict(rfFitUser(), predData())})
-  
+
+  #possible improvement: can I convert back to USA grade scale?
   output$modelPredict <- renderTable({
     if(input$makePrediction == 0) return()
     
+    #predict using only default model if user model has not been fit
     if(input$fitUserModel == 0){
       matrix(
         c(treePredictDefault(), rfPredictDefault()),
@@ -343,6 +383,5 @@ shinyServer(function(input, output, session) {
       )
     }
   }, rownames = TRUE, digits = 0)
-  ########################################################
 })
 

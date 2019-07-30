@@ -74,18 +74,33 @@ shinyUI(fluidPage(
 
                         fluidRow(
                             box(width = 4,
-                            selectizeInput("EDAVar",
-                                           "Choose variable for EDA",
-                                           choices = names(ascentData))
+                                h4("Choose EDA Variable"),
+                                # selectInput("EDAType",
+                                #             "Choose Variable Type",
+                                #             choices = NULL,
+                                #             selected = NULL,
+                                #             multiple = FALSE),
+                                # selectInput("EDAVar",
+                                #             "Choose EDA Variable",
+                                #             choices = NULL,
+                                #             selected = NULL,
+                                #             multiple = FALSE)
+                                uiOutput("EDAType"),
+                                uiOutput("EDAVar")
                             ),
                             box(width = 8,
-                                h5("Numeric summary"),
-                                "Numeric summary"
+                                h4("Numeric Summary"),
+                                tableOutput("EDASummary")
                             )
                         ),
 
                         fluidRow(
-                            box(plotOutput("EDAPlot"))
+                            box(width = 6,
+                                plotOutput("EDAPlot")),
+                            box(width = 6,
+                                h4("troubleshooting")
+                                verbatimTextOutput("EDAPrint"),
+                                h5("I cannot for the life of me figure out why this is returning a list rather than a vector, and I cannot coerce.  This is preventing me from plotting.", style = "color:blue"))
                         )
                 ),
                 
@@ -99,16 +114,20 @@ shinyUI(fluidPage(
                         ),
                         #row for user input and cluster summary
                         fluidRow(
-                            box(
+                            box(width = 4,
+                                h4("Select Number of Clusters"),
                                 sliderInput("nClust", "Number of Clusters",
                                             min = 1, max = 10, value = 5, step = 1),
                                 actionButton("calcClust", "Go!")
                             ),
-                            box(tableOutput("clustTable"))
+                            box(width = 8,
+                                h4("Cluster Summaries"),
+                                tableOutput("clustTable"))
                         ),
                         #row for cluster plot
                         fluidRow(
                             box(width = 12,
+                                h4("Visualize Clusters by Country"),
                                 selectizeInput("cragCountry", "Filter Plot by Country",
                                                choices = stri_sort(cragSummary$cragCountry),
                                                selected = "USA"),
@@ -130,10 +149,10 @@ shinyUI(fluidPage(
                         #row for modeling
                         fluidRow(
                           box(width = 6,
+                              h4("Specify Custom Model Form"),
                               selectizeInput("independent", "Specify Variables for Custom Model",
                                              choices = names(peakGrade[2:5]),
                                              multiple = TRUE),
-                              #checkboxInput("interaction", "Include Interaction Terms"),
                               actionButton("fitUserModel", "Fit User Model"),
                               uiOutput("userModelFormMath")
                           ),
@@ -146,6 +165,7 @@ shinyUI(fluidPage(
                         fluidRow(
                             #user prediction inputs
                             box(width = 6,
+                                h4("Specify Prediction Inputs"),
                                 numericInput("predictSex", "Sex (0 = M, 1 = F)",
                                              value = 0,
                                              min = 0, max = 1),
