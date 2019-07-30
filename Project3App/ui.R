@@ -168,7 +168,9 @@ shinyUI(fluidPage(
                                 uiOutput("clustFilter"),
                                 downloadButton("toCSV", "Download Plot Data to .csv"),
                                 downloadButton("toPNG", "Download Plot Image to .png"),
-                                plotOutput("clustPlot")
+                                plotOutput("clustPlot",
+                                           click = "plotClick"),
+                                tableOutput("info")
                             )
                         )
                 ),
