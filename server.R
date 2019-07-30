@@ -8,7 +8,7 @@ library(rbenchmark)
 library(stringi)
 library(DBI)
 
-ascentData <- read_csv("../ascentDataSample.csv")
+ascentData <- read_csv("ascentDataSample.csv")
 
 ########################################################
 ### Information Tab Support
