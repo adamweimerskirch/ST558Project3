@@ -128,12 +128,9 @@ shinyUI(fluidPage(
                         ),
 
                         fluidRow(
-                            box(width = 6,
-                                plotOutput("EDAPlot")),
-                            box(width = 6,
-                                h4("troubleshooting"),
-                                verbatimTextOutput("EDAPrint"),
-                                h5("I cannot for the life of me figure out why this is returning a list rather than a vector, and I cannot coerce.  This is preventing me from plotting.", style = "color:blue"))
+                            box(width = 12,
+                                h4("Histogram for Numeric Variables"),
+                                plotOutput("EDAPlot"))
                         )
                 ),
                 

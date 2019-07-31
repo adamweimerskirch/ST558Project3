@@ -169,7 +169,7 @@ shinyServer(function(input, output, session) {
   })
   
   EDAData <- reactive({
-    ascentData %>% select(input$EDAVar) %>% as.data.frame()
+    ascentData %>% select(as.character(input$EDAVar)) %>% as.matrix()
   })
   
   #render numeric summary
@@ -181,14 +181,13 @@ shinyServer(function(input, output, session) {
   #render EDA plot
   output$EDAPlot <- renderPlot({
     
-    if(input$EDAType == "character") ggpareto(ascentData[input$EDAVar])
-    #else ggplot(ascentData) + geom_histogram(aes(input$EDAVar))
-    else hist(ascentData[input$EDAVar])
+    if(input$EDAType == "character") return(NULL)
+    else hist(EDAData())
   })
   
   #render EDA text for troubleshooting
   output$EDAPrint <- renderPrint({
-    return(typeof(ascentData[input$EDAVar]))
+    return(typeof(EDAData()))
   })
   
   ########################################################
